@@ -1,0 +1,86 @@
+import socket
+import threading
+
+online_users = {}
+
+
+def tell_everyone_who_is_online():
+
+    all_names = ",".join(online_users.keys())
+
+    system_message = f"USERS:{all_names}"
+
+    for user_name, user_socket in online_users.items():
+        try:
+            user_socket.send(system_message.encode('utf-8'))
+        except:
+            pass
+
+
+def handle_single_client(client_socket, address):
+    nickname = None
+    try:
+        nickname = client_socket.recv(1024).decode('utf-8')
+
+        online_users[nickname] = client_socket
+        print(f"--> NEW FRIEND: {nickname} joined from {address}")
+
+        tell_everyone_who_is_online()
+
+        while True:
+            incoming_data = client_socket.recv(1024).decode('utf-8')
+
+            if not incoming_data:
+                break
+
+            if ":" in incoming_data:
+                target, message_text = incoming_data.split(":", 1)
+
+                if target == "ALL":
+                    print(f"[Public] {nickname} says: {message_text}")
+                    for user_name, user_socket in online_users.items():
+                        if user_name != nickname:
+                            formatted_msg = f"{nickname} (to all): {message_text}"
+                            user_socket.send(formatted_msg.encode('utf-8'))
+
+                elif target in online_users:
+                    print(f"[Private] {nickname} -> {target}")
+                    target_socket = online_users[target]
+                    formatted_msg = f"{nickname}: {message_text}"
+                    target_socket.send(formatted_msg.encode('utf-8'))
+
+                else:
+                    error_msg = f"Server: Sorry, I can't find user '{target}'."
+                    client_socket.send(error_msg.encode('utf-8'))
+
+    except Exception as error:
+        print(f"Oops! Error with {nickname}: {error}")
+
+    finally:
+        if nickname and nickname in online_users:
+            del online_users[nickname]
+            print(f"<-- DISCONNECT: {nickname} has left the chat.")
+            tell_everyone_who_is_online()
+
+        client_socket.close()
+
+
+def wake_up_server():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    server.bind(('0.0.0.0', 12345))
+    server.listen(5)
+
+    print("------------------------------------------------")
+    print(" Chat Server is awake and listening on port 12345 ")
+    print(" Waiting for users to join the chat...")
+    print("------------------------------------------------")
+
+    while True:
+        new_socket, new_address = server.accept()
+        client_thread = threading.Thread(target=handle_single_client, args=(new_socket, new_address))
+        client_thread.start()
+
+
+if __name__ == "__main__":
+    wake_up_server()

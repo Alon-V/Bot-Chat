@@ -1,0 +1,951 @@
+from datetime import datetime
+from nicegui import ui
+import subprocess
+import threading
+import socket
+import random
+from fastapi import Request
+import os
+import signal
+import time
+import uuid
+import sys
+
+
+# =============================================
+# ===== Connection to the server settings =====
+# =============================================
+SERVER_IP = '127.0.0.1'
+SERVER_PORT = 8081
+CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"  # Defines the Chrome executable path
+
+from typing import List, Tuple, Dict, Any
+messages: List[Tuple[str, str, str, str, str]] = []  # (msg_id, sender, text, stamp, target_id)
+active_users_list: List[str] = []  # A simple list of usernames
+
+
+# ========================================
+# ===== Managing colours and avatars =====
+# ========================================
+BG_COLORS = ['b6e3f4', 'c0aede', 'd1f0cc', 'ffd5dc', 'fff3c4', 'f1c27d',
+             'e0f2fe', 'ede9fe', 'c7f9cc', 'ffcad4']   # Colors option fo avatar background
+user_colors_cache: Dict[str, Any] = {}  # Dictionary for saving the colours for each user (so one switch every message)
+avatar_seeds: Dict[str, str] = {}   # A dictionary remember our original name of the avatar
+
+# A function for assigning an avatar or a user -->
+def get_avatar_url(username):
+    if not username:    # הגנה: אם היוזר ריק, נחזיר משהו דיפולטיבי
+        return "https://api.dicebear.com/7.x/bottts/svg?seed=unknown"
+    if username not in avatar_seeds:    # אם אין לנו סיד למשתמש הזה, המקור הוא השם הנוכחי שלו
+        avatar_seeds[username] = username
+    seed = avatar_seeds[username]
+    if seed not in user_colors_cache:   # Always returns the same avatar with a constant colour for each user
+        user_colors_cache[seed] = random.choice(BG_COLORS)
+    bg_color = user_colors_cache[seed]
+    if username == 'System':
+        return "https://api.dicebear.com/7.x/bottts/svg?seed=system"
+    return f"https://api.dicebear.com/7.x/adventurer/svg?seed={seed}&backgroundColor={bg_color}"    # Get the avatar from the "dicebear" website (avatar generator)
+
+# A function to define the users name -->
+def get_my_name_fallback(local_my_name: str) -> str:
+    try: return ui.context.client.storage.get('my_name', local_my_name)
+    except Exception: return local_my_name
+
+
+# ============================
+# ===== Messages counter =====
+# ============================
+def count_relevant_messages(own_name: str) -> int:
+    c = 0
+    for _mid, sender, _text, _stamp, target in messages:
+        target_norm = 'ALL' if str(target or '').upper() == 'ALL' else str(target or '')
+        if target_norm == 'ALL' or target_norm == own_name or sender == own_name:
+            c += 1
+    return c
+
+
+# ===============================
+# ===== Reopen the Launcher =====
+# ===============================
+def open_launcher():
+    opened = ui.run_javascript(r'''
+        (async () => {
+          const HEART = 'launcher_heartbeat_v2';
+          const CH = 'launcher_ctrl_v1';
+
+          const bc = new BroadcastChannel(CH);
+          const id = Math.random().toString(36).slice(2);
+
+          let gotPong = false;
+          const onMsg = (ev) => {
+            const msg = ev.data || {};
+            if (msg.type === 'PONG' && msg.id === id) gotPong = true;
+          };
+          bc.addEventListener('message', onMsg);
+
+          // אם יש heartbeat טרי - נסה לבקש פוקוס במקום לפתוח חדש
+          const last = Number(localStorage.getItem(HEART) || 0);
+          if (Date.now() - last < 2500) {
+            bc.postMessage({ type: 'PING', id });
+            await new Promise(r => setTimeout(r, 250));
+            if (gotPong) {
+              bc.postMessage({ type: 'FOCUS' });
+              bc.removeEventListener('message', onMsg);
+              bc.close();
+              return false;
+            }
+          }
+
+          bc.removeEventListener('message', onMsg);
+          bc.close();
+
+          // אין launcher -> פותחים חדש
+          window.open('/', '_blank', 'popup=yes,width=450,height=600,left=80,top=20');
+          return !!w; // true אם נפתח, false אם נחסם
+        })();
+        ''')
+    if opened is False:
+        ui.notify('Launcher is already open-> cant open a new one', type='warning', position='top')
+
+
+# ======================================================
+# ===== The chat message display logic and styling =====
+# ======================================================
+@ui.refreshable
+def chat_messages() -> None:
+    own_name = ui.context.client.storage.get('my_name', '')
+    own_avatar = ui.context.client.storage.get('my_avatar', '')
+    # Filter messages to show only those relevant to the current user (Private or Global)
+    relevant_messages = []
+    for msg_id, sender, text, stamp, target in messages:
+        raw_target = (target or '')
+        target_norm = 'ALL' if raw_target.upper() == 'ALL' else raw_target
+        # Only if the message is for everyone \ send to me \ sent by me
+        if target_norm == 'ALL' or target_norm == own_name or sender == own_name:
+            relevant_messages.append((msg_id, sender, text, stamp, target_norm))
+
+    # Shows the messages that were meant to me or sent from me
+    if relevant_messages:
+        for msg_id, sender, text, stamp, target_id in relevant_messages:  # To who I sent/received a message to/from
+            sent_by_me = (sender == own_name)
+            label = ""
+            if target_id == 'ALL':
+                label = "To All"
+            elif sent_by_me:
+                label = f"To {target_id}" if target_id != 'ALL' else ""
+            elif target_id != 'ALL':
+                label = "Direct"
+
+            # If it's a system message we'll add to her a unique Class
+            is_system = (sender == 'System')
+            if sent_by_me and own_avatar:
+                avatar = own_avatar  # אם זה אני, תשתמש בתמונה המקורית השמורה
+            else:
+                avatar = get_avatar_url(sender)  # לאחרים, תחשב לפי השם
+            name = sender
+            msg = ui.chat_message(name=name, text=text, stamp=f"{stamp} {label}".strip(), avatar=avatar, sent=sent_by_me).props(f'key="{msg_id}"')  # Message creating and properties
+            if is_system:
+                msg.classes('system-msg')  # light transparency for system messages
+            else:
+                msg.classes('received-msg' if not sent_by_me else '')
+    else:  # Display a placeholder when the chat is empty
+        with ui.column().classes('flex items-center justify-center text-gray-400').style('min-height: 10vh'):
+            ui.icon('chat_bubble_outline').classes('text-5xl mb-2')
+            ui.label('No messages yet')
+
+    ui.run_javascript('''
+            // Calculate if the user right now is in the bottom with a threshold of 200
+            var threshold = 200;
+            var scrollPos = window.innerHeight + window.scrollY;
+            var totalHeight = document.body.offsetHeight;
+            var isNearBottom = scrollPos >= (totalHeight - threshold);
+            
+            // Sends the status to python
+            emitEvent('is_scrolled_up', {status: !isNearBottom});
+            ''')  # Conditional auto-scroll to the bottom on demand
+
+# ============================
+# ===== Scroll utilities =====
+# ============================
+def scroll_to_bottom(force: bool = False):  # Force scroll
+    if force:
+        ui.run_javascript('window.scrollTo(0, document.body.scrollHeight)')
+
+# ============================================================
+# ===== The main panel build: definitions and properties =====
+# ============================================================
+@ui.page('/')
+async def main(request:Request):
+    is_chat = request.query_params.get('mode') == 'chat'  # Checks if im in the chet slot or in the manu
+    initial_name = request.query_params.get('nickname', '')  # Default or named username
+
+    # ======================================================
+    # ===== The first window- control panel (Launcher) =====
+    # ======================================================
+    if not is_chat:
+        ui.query('body').style('background-color: #4a0404')  # Set a background color
+
+        # ==============================
+        # ===== Server Toggle Button ===
+        # ==============================
+        SERVER_SCRIPT = os.path.join(os.path.dirname(__file__), 'Server.py')  # <-- אצלך זה Server.py (S גדולה)
+        server_proc: Dict[str, Optional[subprocess.Popen]] = {'p': None}  # נשמור כאן את ה-Popen
+
+        def is_server_running() -> bool:
+            try:
+                with socket.create_connection((SERVER_IP, SERVER_PORT), timeout=0.25):
+                    return True
+            except OSError:
+                return False
+
+        def start_server() -> bool:
+            if is_server_running():
+                return True
+            try:
+                server_proc['p'] = subprocess.Popen(
+                    [sys.executable, SERVER_SCRIPT],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,  # חשוב ב-Mac בשביל terminate/kill נקי
+                )
+                ui.notify('Server started', type='positive')
+                return True
+            except Exception as e:
+                ui.notify(f'Failed to start server: {e}', type='negative')
+                server_proc['p'] = None
+                return False
+
+        def kill_server_by_port():
+            try:
+                out = subprocess.check_output(["lsof", "-nP", f"-iTCP:{SERVER_PORT}", "-sTCP:LISTEN"], text=True)
+                lines = [ln for ln in out.splitlines() if ln and "PID" not in ln]
+                for ln in lines:
+                    parts = ln.split()
+                    pid = int(parts[1])
+                    os.kill(pid, signal.SIGTERM)
+            except subprocess.CalledProcessError:
+                pass
+            except Exception as e:
+                print("kill_server_by_port error:", e)
+
+        def stop_server():
+            p = server_proc['p']
+            if p is None:
+                ui.notify("No local server proc; trying to stop by port...", type='warning')
+                kill_server_by_port()
+                return
+            try:
+                p.terminate()
+                try:
+                    p.wait(timeout=1.5)
+                except Exception:
+                    p.kill()
+            finally:
+                server_proc['p'] = None
+                ui.notify('Server stopped', type='warning')
+
+        def update_server_ui():
+            running = is_server_running()
+            # icon + color
+            #server_icon.classes(add='cloud-outline')
+            if running:
+                server_icon.name = 'cloud_done'
+                server_icon.classes(remove='text-red-500', add='text-green-500')
+                server_icon.tooltip('Server Online')
+            else:
+                server_icon.name = 'cloud_off'
+                server_icon.classes(remove='text-green-500', add='text-red-500')
+                server_icon.tooltip('Server Offline')
+            server_icon.update()
+            # חשוב: ליישר את ה-toggle למציאות (וככה הוא לא "יקפוץ" סתם)
+            if server_toggle.value != running:
+                server_toggle.value = running
+                server_toggle.update()
+
+        def on_server_toggle(e):
+            val = None
+            if isinstance(e.args, dict): val = e.args.get('value')
+            elif isinstance(e.args, (list, tuple)) and e.args: val = e.args[0]
+            want_on = bool(val)
+            running = is_server_running()
+            if want_on == running: return
+            if want_on:
+                if not start_server(): ui.notify('Failed to start server (check console)', type='negative')
+            else:
+                close_all_chats()
+                try: messages.clear()
+                except Exception: pass
+                active_users_list.clear()
+                stop_server()
+            update_server_ui()
+
+        # ui.timer(0.5, lambda: update_server_ui())
+
+        # ==============================
+        # ===== Launcher Observer ======
+        # ==============================
+        from typing import Optional
+        launcher_socket: Optional[socket.socket] = None
+
+        def start_launcher_observer():
+            nonlocal launcher_socket
+            try:
+                launcher_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                launcher_socket.connect((SERVER_IP, SERVER_PORT))
+                # שם ייחודי כדי שהשרת לא יפיל על NAME_TAKEN
+                launcher_name = f"__LAUNCHER__{uuid.uuid4().hex[:6]}"
+                launcher_socket.sendall(launcher_name.encode('utf-8'))
+            except Exception as e:
+                print("Launcher observer connect failed:", e)
+                return
+
+            def listen_launcher():
+                buffer = ""
+                while True:
+                    try:
+                        chunk = launcher_socket.recv(4096).decode("utf-8", errors="replace")
+                        if not chunk:
+                            break
+                        buffer += chunk
+                        while "\n" in buffer:
+                            line, buffer = buffer.split("\n", 1)
+                            line = line.strip()
+                            if not line:
+                                continue
+
+                            parts = line.split("|")
+                            if len(parts) >= 4 and parts[0].strip() == "USERS":
+                                users_str = parts[3]
+                                active_users_list.clear()
+                                if users_str:
+                                    active_users_list.extend([
+                                        u.strip() for u in users_str.split(",")
+                                        if u.strip() and not u.strip().startswith("__LAUNCHER__")
+                                    ])
+                    except Exception as e:
+                        print("Launcher observer recv error:", e)
+                        break
+
+            threading.Thread(target=listen_launcher, daemon=True).start()
+
+        start_launcher_observer()
+
+        def stop_launcher_observer():
+            nonlocal launcher_socket
+            try:
+                if launcher_socket is not None:
+                    launcher_socket.close()
+            except Exception: pass
+            launcher_socket = None
+
+        ui.context.client.on_disconnect(stop_launcher_observer)
+
+        # The function to close all the active chats -->
+        def close_all_chats():
+            # A JavaScript command that is closing all the windows that were open from the current page
+            ui.run_javascript(r'''
+                    // 1) פקודה לכל חלונות הצ'אט להיסגר לבד
+                    try { new BroadcastChannel('chat_control_v1').postMessage('CLOSE_ALL_CHATS'); } catch(e) {}
+
+                    // 2) ואם במקרה יש לנו עדיין references - ננסה גם לסגור אותם
+                    if (window.openedWindows) window.openedWindows.forEach(w => { try { w.close(); } catch(e) {} });
+
+                    window.chatWindowCount = 0;
+                    window.openedWindows = [];
+                ''')
+            active_users_list.clear()
+            ui.notify('Active users list cleared', type='info', color='green')
+
+        # The function to shut down the whole system -->
+        def shutdown_system():
+            #stop_server()  # Closing the server
+            ui.notify('Shutting down system...', type='negative')
+            close_all_chats()  # Closing all the active windows first
+            stop_server()  # Closing the server
+            ui.run_javascript('window.close();')  # A JavaScript command to close the current window
+            try: os.kill(os.getpid(), signal.SIGTERM)   # Safe closing of the server
+            except Exception: pass
+
+        # Setting the dialogue for showing the activity users -->
+        with ui.dialog() as users_dialog, ui.card().classes('w-80 bg-red-950 border border-white/20 shadow-2xl p-4'):
+            ui.label('Active Users:').classes('text-white text-xl font-bold mb-4 border-b border-white/10 w-full pb-2')
+            users_list_container = ui.column().classes('w-full gap-3')  # A container that will update every time we open the window
+            with ui.row().classes('w-full justify-end mt-4'):
+                ui.button('CLOSE', on_click=users_dialog.close).props('flat').classes(
+                    'text-white border border-white/40 squared-full px-4')  # Closing button and properties
+
+        # A function for updating and showing the dialogue -->
+        def show_active_users():
+            users_list_container.clear()  # Clearing the old list
+            users_list_container.classes('overflow-visible')
+            with users_list_container:
+                if not active_users_list:
+                    ui.label('No data available yet...').classes('text-gray-400 italic text-sm')
+                    ui.label('(Open a chat window to sync)').classes('text-gray-600 text-xs')
+                else:
+                    for name in active_users_list:
+                        with ui.row().classes(
+                                'items-center w-full justify-between bg-white/5 p-2 rounded-lg overflow-visible min-w-0'):
+                            with ui.row().classes('items-center gap-3 min-w-0'):
+                                ui.icon(name='account_circle', color='red-200').classes('text-3xl shrink-0')
+                                ui.label(name).classes('text-white font-large truncate')
+
+                            ui.icon(name='link', color='green-400').classes(
+                                'text-xl shrink-0 opacity-80 hover:opacity-100 transition-all').tooltip('Connected')
+            users_dialog.open()
+
+        def refresh_users_dialog():
+            if users_dialog.value:
+                show_active_users()
+
+        ui.timer(0.5, refresh_users_dialog)
+
+        # ===== Launcher presence + focus bridge (prevents multiple launchers) =====
+        await ui.run_javascript(r'''
+        (() => {
+          const HEART = 'launcher_heartbeat_v2';
+          const CH = 'launcher_ctrl_v1';
+
+          // heartbeat כל 0.8 שניות
+          const beat = () => localStorage.setItem(HEART, String(Date.now()));
+          beat();
+          window.__launcherBeatTimer = setInterval(beat, 800);
+
+          const bc = new BroadcastChannel(CH);
+          bc.onmessage = (ev) => {
+            const msg = ev.data || {};
+            if (msg.type === 'PING') {
+              try { window.focus(); } catch(e) {}
+              bc.postMessage({ type: 'PONG', id: msg.id });
+              return;
+            }
+            if (msg.type === 'FOCUS') {
+              try { window.focus(); } catch(e) {}
+            }
+          };
+
+          window.addEventListener('beforeunload', () => {
+            try { clearInterval(window.__launcherBeatTimer); } catch(e) {}
+            // לא מוחקים את HEART כדי להימנע ממצב שסגירה לא נקייה תשבור זיהוי
+          });
+        })();
+        ''')
+
+        # ==============================
+        # ===== Launcher UI Layout =====
+        # ==============================
+        with ui.column().classes('w-full items-center justify-center h-screen'):
+            with ui.card().classes(
+                    'relative w-96 p-8 rounded-3xl items-center bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl'):
+                # A menu button in the top right corner -->
+                with ui.column().classes('absolute top-1 right-1 z-50 items-center gap-1 self-end'):
+                    # The main operating button
+                    def toggle_admin():
+                        admin_actions.set_visibility(not admin_actions.visible)  # The menu buttons are not visible until we toggle the settings button
+                        btn_main.props(f'icon={"close" if admin_actions.visible else "settings"}')  # Changing the button icons accordingly
+
+                    btn_main = ui.button(icon='settings', on_click=toggle_admin) \
+                        .props('round color=red-900 shadow-lg')  # The settings button properties
+
+                    # The buttons are opening down
+                    with ui.column().classes('items-center gap-1') as admin_actions:
+                        admin_actions.set_visibility(False)
+                        # Using scale and dense for them to be small
+                        ui.button(icon='group', on_click=show_active_users) \
+                            .props('round dense color=red-800').classes('scale-75') \
+                            .tooltip('Show Active Users')  # Active users button
+                        ui.button(icon='close_fullscreen', on_click=close_all_chats) \
+                            .props('round dense color=red-700').classes('scale-75') \
+                            .tooltip('Close all chat windows')  # Closing all operating chats button
+                        ui.button(icon='power_settings_new', on_click=shutdown_system) \
+                            .props('round dense color=black').classes('scale-75') \
+                            .tooltip('Shutdown System') # System shutdown button
+
+                # A standalone server button (top-left) -->
+                ui.add_head_html(""" <style> .cloud-outline { filter: drop-shadow(0 0 4px #ffffff); } </style> """)
+                with ui.row().classes('absolute top-0 left-3 z-50 items-center gap-1'):
+                    server_icon = ui.icon('cloud_off').classes('text-red-500 text-2xl cloud-outline')
+                    server_toggle = ui.switch().props('color=blue')
+                    server_toggle.on('update:model-value', on_server_toggle)
+                update_server_ui()
+                ui.timer(3.0, update_server_ui)  # polling עדין, לא “דוחף” סתם
+
+                # Headlines, icons and info -->
+                ui.icon('rocket_launch', color='white').classes('text-6xl mb-4')
+                ui.label('Welcome to the Chat 👋').classes('text-white text-2xl font-bold')
+                ui.label('COMMAND CENTER').classes('text-white text-lg font-bold tracking-tighter mb-2')
+
+                with ui.row().classes('items-center gap-2 mb-6'):
+                    ui.icon('account_circle', color='red-200').classes('text-3xl')
+                    ui.label('Create a New User').classes('text-red-200 text-2xl font-bold tracking-tighter')
+
+                # The function to initiate a new chat from the menu -->
+                def launch_chat():
+                    name = new_user_name.value.strip()
+                    if not name or len(name) > 9:  # Validation: Username cannot be empty and max 9 characters
+                        ui.notify('Please enter a name (1-9 chars)', type='warning')
+                        return
+
+                    # Prevent using an online / system / launcher name (client-side) -->
+                    name_norm = name.casefold()
+                    online_norm = {u.strip().casefold() for u in active_users_list if u and u.strip()}
+                    if name_norm in online_norm:
+                        ui.notify(f'"{name}" is already online. Choose another name.', type='negative')
+                        return
+                    if name_norm in {'system'} or name_norm.startswith('__launcher__'):
+                        ui.notify('This name is reserved.', type='warning')
+                        return
+
+                    js_code = f"""  if (window.chatWindowCount === undefined) window.chatWindowCount = 0;   // Resetting the variables
+                                    if (window.openedWindows === undefined) window.openedWindows = [];  // Resetting the variables
+                                    let offset = window.chatWindowCount * 50;   // Calculate the location
+                                    let url = '/?mode=chat&nickname={name}';    // Building the url
+                                    let newWin = window.open(url, '_blank', `popup=yes,width=650,height=400,left=${{100 + offset}},top=${{100 + offset}}`);
+                                    if (newWin) window.openedWindows.push(newWin); // Saving the window on the list
+                                    window.chatWindowCount++;"""  # JavaScript to open a new popup window with a cascading offset and saves the info
+                    ui.run_javascript(js_code)  # Opens a popup chat window
+                    ui.notify(f'Opening chat for {name}...', type='positive')
+                    new_user_name.value = ''  # Reset the box input for the next name
+
+                new_user_name = ui.input(label='Enter Nickname', placeholder='Up to 9 chars...') \
+                    .classes('w-full mb-8') \
+                    .props('dark standout="bg-red-900/30" color=white label-color=red-200') \
+                    .style('color: white !important;') \
+                    .props('input-style="color: white"') \
+                    .props('counter maxlength=9') \
+                    .on('keydown.enter', launch_chat)  # The new name box input definition
+
+                ui.button('LAUNCH CHAT', on_click=launch_chat) \
+                    .classes('''
+                                w-full py-4 rounded-xl font-bold text-white shadow-lg
+                                bg-red-900 hover:bg-red-700 
+                                transform transition-all duration-300 hover:scale-105
+                                hover:shadow-[0_0_20px_rgba(255,0,0,0.4)]
+                                tracking-widest
+                            ''').style('background-color: #7f1d1d !important;')  # 'LAUNCH CHAT' button definition
+
+                ui.label('The control panel stays open to add more users.').classes(
+                    'text-xs text-gray-400 mt-4')  # 'Notice' label
+        return
+
+    # ==============================================================
+    # ===== The chat slot: messages panel (Soket Client Logic) =====
+    # ==============================================================
+    # 1. ----- Setting up name and variables -----
+    if initial_name:
+        my_name = initial_name
+    else:
+        my_name = f'User{random.randint(1000, 9999)}'  # Set the name to the given nickname or to a default one
+
+    my_avatar = get_avatar_url(my_name) # Getting the new users avatar
+    ui.context.client.storage['my_name'] = my_name  # Adding my name to the storage
+    ui.context.client.storage['my_avatar'] = my_avatar  # Adding my avatar to the storage
+
+    # Variables to track after scrolling positions -->
+    new_msg_counter = {'count': 0}  # A variable to track after messages that weren't read yet
+    last_count = [len(messages)]    # Saves the last amount of new messages
+    is_up = [False] # Saves the information if the user is currently up
+    ui.on('is_scrolled_up', lambda e: is_up.__setitem__(0, bool(e.args.get('status', False)))) # Catches the event from the JavaScript on chat_messages
+    latest_confirmed_name = [my_name]   # Rename pending state (thread -> UI)
+
+    # UI refs (to update after rename) -->
+    logged_as_label = None
+
+    # 2. ----- Server-Client connections -----
+    # Creating a soket connection to the Server -->
+    try:
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((SERVER_IP, SERVER_PORT))
+        client_socket.sendall(my_name.encode('utf-8'))   # Sending an "introduction" message to the server with our name
+        ui.notify(f"Connected as {my_name}", type='positive')
+    except Exception as e:
+        ui.query('body').style('background-color: #1a0202; color: white;')
+        ui.label(f"CONNECTION ERROR: {e}").classes('text-red-500 text-2xl font-bold m-4')
+        ui.label("Please ensure 'server.py' is running!").classes('text-xl m-4')
+        return
+
+    # 3. ----- Scroll Logic Helpers -----
+    async def scroll_to_bottom(force=False):
+        if force:
+            new_msg_counter['count'] = 0  # Resetting counter
+            badge.text = ''  # Resetting the text
+            badge.set_visibility(False)  # Making the button invisible again
+            scroll_btn.classes(remove='scale-100', add='scale-0')
+            await ui.run_javascript('window.scrollTo(0, document.body.scrollHeight)')  # Forcefully scroll down
+
+    # 4. ----- Listener Thread -----
+    # A function for listening to messages from the server (will run on background) -->
+    def listen_to_server():
+        buffer = ""  # Accumulates partial TCP chunks
+        while True:
+            try:    # receiving a message from the server (up to 1024 bits)
+                chunk = client_socket.recv(4096).decode('utf-8', errors='replace')
+                if not chunk: break
+                buffer += chunk
+
+                # ---- stage 1: Identifying the type of message by the protocol ---
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
+                    line = line.strip()
+                    if not line: continue
+
+                    parts = line.split("|")
+                    if len(parts) < 2: continue # protect protection from "broken" messages
+
+                    msg_type = parts[0].strip()  # Could be MSG / USERS / ERR / ACK
+
+                    # ---- option A: the server sent list of updated users ----
+                    if msg_type == "USERS" and len(parts) >= 4:
+                        # The format: USERS|System|All|user1,user2,user3
+                        users_str = parts[3]
+                        active_users_list.clear()
+                        if users_str:   # if the list is not empty, we will update
+                            active_users_list.extend([u.strip() for u in users_str.split(",") if u.strip()])
+
+                    # ---- option A.1: server error (e.g., name taken) ----
+                    elif msg_type == "ERR" and len(parts) >= 4:
+                        # ERR|System|<who>|<code>
+                        err_code = parts[3].strip()
+                        ui.notify(f"Server error: {err_code}", type='negative', position='top')
+
+                    # ---- option A.2: server ack (e.g., name changed approved) ----
+                    elif msg_type == "ACK" and len(parts) >= 5:
+                        # ACK|System|<old>|NAME_CHANGED|<new>
+                        action = parts[3].strip()
+                        if action == "NAME_CHANGED":
+                            latest_confirmed_name[0] = parts[4].strip()
+
+                    # ---- option A.3: server rename event (avatar seed sync) ----
+                    elif msg_type == "RENAME" and len(parts) >= 3:
+                        # RENAME|old|new
+                        old_n = parts[1].strip()
+                        new_n = parts[2].strip()
+                        if old_n and new_n:
+                            avatar_seeds[new_n] = avatar_seeds.get(old_n, old_n)
+                        continue  # לא מוסיפים הודעה לצ'אט
+
+                    # ---- option B: the server sent a normal chat message ----
+                    elif msg_type == "MSG" and len(parts) >= 5:
+                        # MSG|sender|target|msg_id|content(with possible |)
+                        sender = parts[1].strip()
+                        raw_target = parts[2].strip()
+                        target_id = 'ALL' if raw_target.upper() == 'ALL' else raw_target
+                        msg_id = parts[3].strip()
+                        content = "|".join(parts[4:])  # חשוב: אם יש '|' בתוך הודעה, שלא יחתוך לך
+
+                        # Hide launcher system messages from chat users -->
+                        if sender == 'System' and '__LAUNCHER__' in content:continue
+
+                        # לשמור avatar קבוע אחרי rename לפי הודעת system
+                        '''
+                        if sender == 'System' and ' has changed the user_name to-> ' in content:
+                            try:
+                                old_n, new_n = [x.strip() for x in content.split(' changed name to ', 1)]
+                                avatar_seeds[new_n] = avatar_seeds.get(old_n, old_n)
+                            except Exception as e:
+                                print(f"Error parsing system msg: {e}")
+                        '''
+                        if any(m[0] == msg_id for m in messages): continue  # If there is already a message with the same msg_id, we don't add it
+                        # creating variables for the presentation -->
+                        stamp = datetime.now().strftime('%H:%M')
+                        # adding to the global list (saving the real target_id so we would know if it's private or for all) -->
+                        messages.append((msg_id, sender, content, stamp, target_id))
+
+            except Exception as e:
+                print(f"Error receiving: {e}")
+                break
+
+    threading.Thread(target=listen_to_server, daemon=True).start()  # Activating the thread that is listening to the server
+
+    # 5. ----- UI Updater -----
+    # Updating globally for all the users that are connected -->
+    def update_ui():
+        current_me = ui.context.client.storage.get('my_name', my_name)
+        confirmed_name = latest_confirmed_name[0]
+
+        # === מנגנון סנכרון: אם יש חוסר תאמה, מבצעים עדכון כפוי ===
+        if current_me != confirmed_name:
+            print(f"Syncing name: {current_me} -> {confirmed_name}")
+
+            # 1. עדכון הזיכרון
+            ui.context.client.storage['my_name'] = confirmed_name
+
+            # 2. עדכון ויזואלי
+            if logged_as_label: logged_as_label.text = f'Logged as: {confirmed_name}'
+            try: name_input.value = confirmed_name
+            except: pass
+
+            # 4. תיקון הודעות אחורה (כדי שהבועות יסתדרו)
+            old_name = current_me
+            new_name = confirmed_name
+            for i, (mid, sender, msg_text, stamp, tgt) in enumerate(messages):
+                new_sender = new_name if sender == old_name else sender
+                new_tgt = new_name if tgt == old_name else tgt
+                if new_sender != sender or new_tgt != tgt:  # If it's my old name or a different target
+                    messages[i] = (mid, new_sender, msg_text, stamp, new_tgt)
+            chat_messages.refresh()
+
+            # הודעה למשתמש
+            ui.notify(f"Name updated to: {confirmed_name}", type='positive', position='top')
+
+            # מעדכנים את המשתנה המקומי להמשך הפונקציה
+            current_me = confirmed_name
+
+        current_options = {'ALL': 'Everyone'}
+        for user in active_users_list:
+            u = str(user).strip()
+            if u and u != current_me: current_options[u] = u
+        if target.value not in current_options and target.value != 'ALL':
+            target.value = 'ALL'
+        target.options = current_options    # Refreshing all the users (except myself)
+        target.update()
+
+        current_relevant = count_relevant_messages(current_me)  # Updating the current count
+        if current_relevant > last_count[0]:  # Checking if you have messages if you haven't read yet
+            chat_messages.refresh()  # Refreshing the chat bubbles on the screen
+            if is_up[0]:  # If there is a new message and the user is scrolled up
+                new_msg_counter['count'] += (current_relevant - last_count[0])  # Deducting the messages you are reading from the msg_counter list
+                badge.text = str(new_msg_counter['count'])
+                badge.set_visibility(True)
+                scroll_btn.classes(remove='scale-0', add='scale-100')  # Adapting the scrolling position
+            else:  # If the user is down, we'll just automatically glide
+                ui.run_javascript('window.scrollTo(0, document.body.scrollHeight)')
+            last_count[0] = current_relevant  # Updating the new current count of unread messages
+
+    #ui.timer(0.1, update_ui)  # Refreshing every 1.0 sec (name changing, new users...)
+
+    # The function to handle the event of a client leaving the chat -->
+    def handle_disconnect():
+        try: client_socket.shutdown(socket.SHUT_RDWR)
+        except: pass
+        try: client_socket.close()
+        except: pass
+
+    # When the tab is closed: client has disconnected -->
+    ui.context.client.on_disconnect(handle_disconnect)
+    # אירוע שסוגר את ה-socket ברגע שהחלון נסגר
+    ui.on('page_closing', lambda e: handle_disconnect())
+    await ui.context.client.connected()
+    await ui.run_javascript(''' window.addEventListener('beforeunload', () => { emitEvent('page_closing', {}); }); ''')
+    await ui.run_javascript(r'''(() => { const bc = new BroadcastChannel('chat_control_v1'); bc.onmessage = (ev) => 
+        { if (ev && (ev.data === 'CLOSE_ALL_CHATS' || ev.data === 'CLOSE_ME')) { try { window.close(); } catch(e) {}}
+      };})();
+    ''')
+
+    ui.timer(0.1, update_ui)  # Refreshing every 1.0 sec (name changing, new users...)
+
+    # 6. ----- Styling -----
+    ui.query('body').style('''
+                background-color: #1a0202; 
+                background-image: radial-gradient(#3d0505 1px, transparent 0px);
+                background-size: 20px 20px;
+                margin: 0; padding: 0;
+            ''')  # Chat Background color and properties
+
+    ui.query('.q-page').style('background-color: transparent;')  # AddOn page style
+
+    # An HTML definitions for the messages bubbles on the chat panel -->
+    ui.add_head_html('''
+            <style>
+                /* The name of the sender above the message bubble - white */
+                .q-message-name { color: white !important; font-weight: bold; opacity: 0.9; margin-bottom: 4px; }
+                
+                /* The message bubble that you receive- gray */
+                .q-message-text { background: #9ba4b3 !important; color: black !important; border-radius: 12px !important; }
+
+                /* The message bubble that you send- white */
+                .q-message-sent .q-message-text { background: #ffffff !important; color: black !important; border-radius: 12px !important; }
+                
+                /* Changing the Stamp color to light black (gray) */    
+                .q-message-stamp { color: rgba(0, 0, 0, 0.85) !important; }
+                
+                /* The color of the text that you are typing (to prevent merge colors) */
+                input { color: white !important; } 
+
+                .system-msg .q-message-text { background: #121212 !important; color: #ffffff !important; border: 1px solid #333 !important; font-style: italic !important; font-size: 0.85rem; min-height: unset !important; }
+                
+                .system-msg .q-message-text, .system-msg .q-message-text * { color: #ffffff !important; }
+                
+                .system-msg .q-message-stamp { color: #ffffff !important; opacity: 0.9; }
+                
+                .system-msg .q-message-name { color: #ffffff !important; font-size: 0.75rem !important; opacity: 0.7; }
+            </style>
+            ''')
+
+    # 7. ----- Action Functions -----
+    # The function for sending the message to the chat -->
+    def send() -> None:
+        current_name = str(ui.context.client.storage.get('my_name', my_name)).strip()
+        msg = (text.value or '').strip()
+        if not msg:  # Validation: prevent sending empty strings or whitespace
+            ui.notify('Cannot send empty message', type='warning', position='top')
+            return
+        try:
+            if client_socket.fileno() == -1: # Check if there is a connection
+                ui.notify('You are disconnected. Please refresh.', type='negative')
+                return
+
+            raw_target = (target.value or 'ALL')
+            recipient = ('ALL' if str(raw_target).upper() == 'ALL' else str(raw_target)).strip()
+            if recipient != 'ALL' and recipient == current_name:
+                ui.notify("You can't send a message to yourself", type='warning', position='top')
+                target.value = 'ALL'
+                return
+
+            msg_id = f"{int(time.time() * 1000)}-{uuid.uuid4().hex[:6]}"
+            payload = f"{recipient}:{msg_id}:{msg}"
+            client_socket.sendall(payload.encode('utf-8'))
+            stamp = datetime.now().strftime('%H:%M')
+            messages.append((msg_id, current_name, msg, stamp, recipient))
+            chat_messages.refresh()
+            text.value = ''
+            ui.timer(0.1, lambda: scroll_to_bottom(force=True), once=True)
+        except OSError as e:  # Catch Errno 9
+            ui.notify(f"Connection Lost! Please refresh. ({e})", type='negative', close_button=True)
+        except Exception as e:
+            ui.notify(f"Error sending: {e}", type='negative')
+
+    # The function for updating your username from the name_input slot in the footer -->
+    def update_name():
+        new_name = name_input.value.strip()
+        if not new_name or len(new_name) > 9:  # Validation: Username cannot be empty and max 9 characters
+            msg = 'The Name can not be empty!' if not new_name else 'The Name must be up to 9 characters!'
+            ui.notify(msg, type='warning', position='top')  # "Warning" notification
+            name_input.value = ui.context.client.storage.get('my_name', my_name)  # Show the former name in the name_input slot
+            return
+
+        # Prevent renaming to an already-online name (client-side) -->
+        name_norm = new_name.casefold()
+        current_me = str(ui.context.client.storage.get('my_name', my_name)).strip()
+        online_norm = {u.strip().casefold() for u in active_users_list if u and u.strip()}
+        online_norm.discard(current_me.casefold())
+        if name_norm in online_norm:
+            ui.notify(f'"{new_name}" is already online. Choose another name.', type='negative', position='top')
+            name_input.value = current_me
+            return
+        if name_norm in {'system', 'admin'} or name_norm.startswith('__launcher__'):
+            ui.notify('This name is reserved.', type='warning')
+            return
+
+        # If everything is clear we'll update the name and show a "Success" notification
+        try:
+            cmd = f"CMD:NAME_CHANGE:{new_name}"
+            client_socket.sendall(cmd.encode('utf-8'))
+            ui.notify('Name change request sent...', type='info', position='top')
+        except Exception as e:
+            ui.notify(f"Failed to update name: {e}", type='negative')
+            name_input.value = my_name
+
+    # CSS definition -->
+    ui.add_css(r'a:link, a:visited {color: inherit !important; text-decoration: none; font-weight: 500}')
+
+    # ==============================================================
+    # ===== The top bar section that is pinned to the top left =====
+    # ==============================================================
+    with ui.row().classes('''fixed top-2 left-2 z-50 items-center bg-white/10 backdrop-blur-md py-2 px-4
+                            rounded-2xl border border-white/20 shadow-2xl'''):
+        with ui.avatar(size='md').classes('shadow-md border border-white/30'):
+            ui.image(my_avatar)  # Shows the avatar image
+
+        with ui.column().classes('gap-0'):  # Headlines and info
+            ui.label('SECURITY STATUS: ENCRYPTED').classes('text-[10px] text-red-400 font-bold tracking-widest')
+            logged_as_label = ui.label(f'Logged as: {my_name}').classes('text-sm font-bold text-white')
+
+    # A button to open Launcher (top-right) -->
+    with ui.row().classes(
+            'fixed top-2 right-2 z-50 items-center bg-white/10 backdrop-blur-md py-2 px-2 '
+            'rounded-2xl border border-white/20 shadow-2xl'):
+        ui.button(icon='rocket_launch', on_click=open_launcher) \
+            .props('dense flat') \
+            .classes('text-white w-7 h-7 p-0 min-w-0 text-lg '
+                        'transition-transform duration-150 hover:scale-110') \
+            .tooltip('Open Launcher')
+
+    # A button for auto-scrolling when you have new messages (hidden at first) -->
+    with (ui.button(on_click=lambda: scroll_to_bottom(force=True)) \
+                  .props('round unelevated') \
+                  .classes('''fixed bottom-24 right-6 z-50 transition-all scale-0 
+                            bg-black text-white 
+                            border-[2px] border-white shadow-2xl''')
+                  .style('width: 38px; height: 38px; min-height: 38px;') as scroll_btn):  # Button definition and his properties
+        ui.icon('expand_more').classes('text-2xl font-bold')  # The icon of the button
+        badge = ui.badge('', color='orange-600') \
+            .props('floating') \
+            .classes('text-[10px] px-1.5 py-0.5 font-bold border border-white shadow-sm')  # Number notification badge
+        badge.set_visibility(False)
+
+    # ====================================================
+    # ===== The Footer: the main section of the chat =====
+    # ====================================================
+    footer = ui.footer().classes('bg-white/10 backdrop-blur-md py-4 px-6 border-t border-white/10 shadow-2xl')
+    with footer:
+        with ui.row().classes('w-full no-wrap items-center gap-3 max-w-4xl mx-auto'):  # They are all in the same row
+            with ui.avatar():
+                ui.image(my_avatar).classes('shadow-md border border-white/20')  # Shows the avatar image
+
+            name_input = ui.input(label='My Name', value=my_name) \
+                .style('width: 80px') \
+                .props('dense flat color=white label-color=red-600 input-style="color: white"') \
+                .on('keydown.enter',
+                    lambda _: update_name())  # The name_input slot: where you can change and update your name
+
+            text = ui.input(placeholder='message') \
+                .on('keydown.enter', send) \
+                .props('rounded standout="bg-white/20" color=white input-style="color: white"') \
+                .classes(
+                'flex-grow bg-white/10 rounded-full text-white border border-white/10')  # The text message input: where you can type your message to the chat
+
+            target = ui.select(options={'ALL': 'Everyone'}, value='ALL', label='Send to') \
+                .props('dense outlined dark color=white popup-content-class="bg-red-750 text-white"') \
+                .classes('w-32')  # The target selection slot: to who to send from all the users (except myself)
+
+            ui.button(icon='send', on_click=send) \
+                .props('flat') \
+                .classes('''bg-red-900 text-white squared-full p-1.5 hover:bg-red-700 hover:scale-110
+                            transition-all shadow-[0_0_15px_rgba(255,0,0,0.3)]''')  # The send button
+
+    # ================================================================================
+    # ===== The Message Area: the section where connect and defines the messages =====
+    # ================================================================================
+    messages_area = (ui.column().classes('w-full max-w-2xl mx-auto items-stretch pt-11 p-4 mb-6 rounded-xl'))
+    messages_area.props('id=messages_area')
+    with messages_area:
+        await ui.context.client.connected()  # Ensures the client is fully connected to the server before rendering chat messages (Awaits WebSocket establishment)
+        ui.timer(0.1, lambda: ui.run_javascript('window.scrollTo(0, document.body.scrollHeight)'),
+                 once=True)  # Automatically scrolls to the bottom in a new user
+        chat_messages()  # Calls to the message definition for this user
+
+
+# ==============================================
+# ===== The first window popup panel build =====
+# ==============================================
+def open_popup_app(url: str):
+    subprocess.Popen([
+        CHROME,
+        f"--app={url}",
+        "--window-size=420,500",
+        "--window-position=70,80",
+    ])
+'''
+import platform
+
+def open_popup_app(url: str):
+    try:
+        if platform.system() == 'Darwin':  # Mac
+            subprocess.Popen(['open', '-n', '-a', 'Google Chrome', '--args', f'--app={url}'])
+        else:  # Windows
+            subprocess.Popen(f'start chrome --app={url}', shell=True)
+    except:
+        # אם אין כרום או שמשהו הסתבך - פתח בדפדפן רגיל
+        import webbrowser
+        webbrowser.open(url)
+'''
+# ====================================================
+# ===== The connection of a client to the server =====
+# ====================================================
+if __name__ in {'__main__', '__mp_main__'}:
+    port = 8080
+    url = f"http://localhost:{port}/"
+
+    threading.Timer(0.5, open_popup_app, args=(url,)).start()
+    ui.run(reload=False, port=port, show=False, title="The Best Chat App")

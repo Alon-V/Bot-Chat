@@ -28,7 +28,7 @@ Botchat is a full Client Server architecture using pure Python socket libraries 
 | [UI_Router](/BotChat/UI_Router.py) | Routes traffic between Launcher and Chat modes |
 | [State_Globals](/BotChat/State_Globals.py) | Shared state variables (Message history, Active users) |
 
-If you want to know a bit more about the code itself
+.[If you want to know a bit more about the code itself](/Guides/MoreAboutCode.md)
 
 ## How to Run 🏃
 You need

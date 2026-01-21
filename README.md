@@ -2,7 +2,7 @@
 
 A real time chat application built with Python, Raw TCP Sockets, and NiceGUI
 Botchat is a full Client Server architecture using pure Python socket libraries for networking wrapped in a responsive web-based interface.
-[In case you want to look at part 1 first click here](/PartOne/WireSharkLog.md)
+[In case you want to first look at part 1- "TCP/IP Packet Encapsulation and Capture" click here](/PartOne/WireSharkLog.md)
 
 
 ## Key Features ✨

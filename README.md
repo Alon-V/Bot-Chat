@@ -59,7 +59,14 @@ This luncher is what you should see after running run_app
 <div align="right">
   <img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/838ae443-56ed-4c18-802f-b3d895017376" />
 </div>
+Step one Enter a nickname for your user
+anddd thats it you have a user
+you can change his name by clicking on the name on the butom left and you can do the same with the image
 
+using the Luncher you can see who is coneccted and close the chat for everyone
+<div align="right">
+<img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/0568f2e2-f45f-4ef2-b044-76658ed0cf65" />
+</div>
 
 To be contiued 
 

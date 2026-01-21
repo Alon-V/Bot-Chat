@@ -25,7 +25,7 @@ You need
 - Python 3.8+
 - NiceGUI
 
-### easy (and "spical") way to run it:
+### easy (and "special") way to run it:
 
 Copy all the code in the project one by one to a open project you have make sure each code is in a diffrent file in that project
 

@@ -13,7 +13,7 @@ Botchat is a full Client Server architecture using pure Python socket libraries 
 
 ## Project Structure 🧌
 | File | Short summery |
-| --- | --- | --- |
+| --- | --- |
 | Main_Server.py | The TCP Server logic (Connection handling, Broadcasting) |
 | Chat_UI.py | The Chat Window interface (NiceGUI + Client Socket) |
 | Launcher_UI.py | The Dashboard/Login screen (Server toggle, User list) |

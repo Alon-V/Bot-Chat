@@ -76,7 +76,7 @@ using the Luncher you can see who is coneccted and close the chat for everyone
 
 ## How to run chatbot on local LAN (Multiple Computers) 🌐
 
-1. Find your IPv4 Address (Run ipconfig in CMD).[How to Enter cmd](/Guides/cmd.md)
+1. Find your IPv4 Address (see guide for further explanation).[How to Enter cmd](/Guides/cmd.md)
 2. Open [Common_Setups](/BotChat/Common_Setups.py).
 3. Update the SERVER_IP variable:
 `SERVER_IP = '*.*.*.*'  # Replace with YOUR local IP`

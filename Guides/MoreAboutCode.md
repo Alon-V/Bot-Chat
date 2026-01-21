@@ -14,12 +14,12 @@ It has buttons to start or stop the Server process and allows you to launch new 
 It includes a special "Observer" feature—a hidden connection that stays online in the background to watch who joins or leaves the server.
 This ensures the "Active Users" list in the red box is always correct, even if you don't have any chat windows open.
 
-Common_Setups:
+4. Common_Setups:
 This hold some Importent stats like the IP address and Port number all other filles uses this and if you want to switch from Localhost to LAN this makes it easier
 
-UI_Router:
+5. UI_Router:
 This script decides which screen to show based on the URL.
 
-Run_App:
+6. Run_App:
 This is the main script that starts your application. It launches the NiceGUI web server and automatically opens a Chrome window in "App Mode" (without the address bar) so the chat looks like a real desktop program.
 It also imports the router to ensure all your pages are registered before the app begins.

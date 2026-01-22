@@ -33,6 +33,10 @@ It also imports the router to ensure all your pages are registered before the ap
 - [`Run_App.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Run_App.py)
 
 ## State_Globals: 🗂️
-
+This file stores shared runtime state for the UI layer.
+It is used by both the Launcher and Chat windows to keep data synchronized.
+It holds global structures such as: (chat messages, active users list, avatar URLs and avatar identity data)
+Centralizing this state allows all UI windows to update instantly and consistently
+within the same NiceGUI process.
 - [`State_Globals.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/State_Globals.py) 
 

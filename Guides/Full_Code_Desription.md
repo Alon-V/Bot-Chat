@@ -342,6 +342,54 @@ When the user scrolls up:
   
 - When the user returns to bottom: Counter resets automatically
 
+---
 
+## Protocol Reference 📡
+All messages are newline-delimited (\n).
+
+### Server → Clients (Pipe | separated) 💾
+**1) USERS — Online Users Update**
+
+Format: `USERS|System|ALL|user1,user2,user3`
+
+**2) MSG — Chat Message**
+
+Format: `MSG|<sender>|<target>|<msg_id>|<content>`
+
+**3) ACK — Confirmation to Requestor**
+
+Format: `ACK|System|<old>|NAME_CHANGED|<new>`
+
+**4) ERR — Error**
+
+Format: `ERR|System|<who>|NAME_TAKEN`
+
+**5) RENAME — Rename Broadcast (for sync)**
+
+Format: `RENAME|<old>|<new>`
+
+**6) AVATAR — Avatar Broadcast**
+
+Format: `AVATAR|<username>|<url>`
+
+### Client → Server 🪪
+
+**A) Normal Messages (Colon : separated)**
+
+Format: `<recipient>:<msg_id>:<text>`
+
+- recipient is ALL or an exact username
+
+- msg_id is generated client-side
+
+**B) Commands**
+
+- Quit / clean disconnect: `CMD:QUIT`
+
+
+- Rename request: `CMD:NAME_CHANGE:<new_name>`
+
+
+Avatar update: `CMD:AVATAR:<avatar_url>`
 
 

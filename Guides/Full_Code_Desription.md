@@ -24,14 +24,14 @@ The project includes a **Launcher (Control Center)** window that can:
 - [Requirements](#requirements-)
 - [Configuration (IP / Ports)](#configuration-ip--ports-)
 - [Installation](#installation-)
-- [How To Run](https://github.com/Alon-V/Bot-Chat/blob/main/Guides/Full_Code_Desription.md#how-to-run-%EF%B8%8F)
+- [How To Run](#how-to-run-%EF%B8%8F)
   - [Run via Launcher (Recommended)](#1-run-via-launcher-recommended-)
-  - [Run Server Manually + UI](https://github.com/Alon-V/Bot-Chat/edit/main/Guides/Full_Code_Desription.md#2-run-server-manually--ui-%EF%B8%8F)
+  - [Run Server Manually + UI](#2-run-server-manually--ui-%EF%B8%8F)
   - [Open Pages Manually (No Popup)](#3-open-pages-manually-no-popup-)
 - [How to Use the Launcher](#how-to-use-the-launcher-)
 - [How to Use the Chat Window](#how-to-use-the-chat-window-)
 - [Protocol Reference](#protocol-reference-)
-- [Important Notes & Warnings](https://github.com/Alon-V/Bot-Chat/edit/main/Guides/Full_Code_Desription.md#important-notes--warnings-%EF%B8%8F)
+- [Important Notes & Warnings](#important-notes--warnings-%EF%B8%8F)
 - [Troubleshooting](#troubleshooting-)
 
 ---

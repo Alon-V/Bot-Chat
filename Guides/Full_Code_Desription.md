@@ -1,17 +1,23 @@
 # BotChat 🤖💬  
-**Multi-window TCP Chat with a Launcher Control Center (NiceGUI + Python Sockets)**
+**A TCP/IP Multi-Client Chat with a Launcher Control Center & Popup Chat Windows (NiceGUI + Python Sockets)**
 
 BotChat is a learning-oriented chat system that demonstrates a full client–server workflow using:
 - **NiceGUI** for UI (Launcher + Chat windows)
 - A custom **TCP server** implemented with Python sockets
 - A simple, explicit **line-based protocol** (USERS / MSG / ACK / ERR / RENAME / AVATAR)
 
-The project includes a **Launcher (Control Center)** window that can:
-- Start/stop the server
-- Spawn multiple chat users (each opens in its own popup window)
-- Display active users
-- Close all chat windows
-- Shutdown the entire system cleanly
+The system provides a dedicated **Launcher Control Panel** for operational control:
+  - Start/stop the server
+  - Spawn multiple chat users (each opens in its own popup window)
+  - Display active users
+  - Close all chat windows
+  - Shutdown the entire system cleanly
+
+In addition to multiple **chat popup windows** representing distinct users:
+  - Sending messages (Public & Direct)
+  - Changing your avatar image
+  - Renaming your UserName
+  - Opening a new Launcher window if needed
 
 ---
 
@@ -33,6 +39,7 @@ The project includes a **Launcher (Control Center)** window that can:
 - [Protocol Reference](#protocol-reference-)
 - [Important Notes & Warnings](#important-notes--warnings-%EF%B8%8F)
 - [Troubleshooting](#troubleshooting-)
+- [Summary & Conclusions](#summary--conclusions-)
 
 ---
 
@@ -65,6 +72,9 @@ The project includes a **Launcher (Control Center)** window that can:
   - sends `CMD:QUIT`
   - waits briefly for server-side close
   - reduces “ghost users”
+- ✅ Launcher access from chat window:
+  - A dedicated shortcut button allows opening the Launcher directly from any chat window.
+  - If the Launcher is already running, the existing window is focused instead of creating a duplicate.
 
 ---
 
@@ -341,6 +351,19 @@ When the user scrolls up:
   
 - When the user returns to bottom: Counter resets automatically
 
+
+### Open Launcher from Chat Window 🚀
+
+Each chat window includes a Launcher shortcut button (top-right corner).
+
+- Clicking the button attempts to open the Launcher.
+- If the Launcher is already open:
+  - The existing Launcher window is brought to focus.
+- If the Launcher is closed:
+  - A new Launcher window is opened automatically.
+
+This allows users to regain full system control even if the Launcher was closed intentionally or unintentionally.
+
 ---
 
 ## Protocol Reference 📡
@@ -407,6 +430,21 @@ Therefore, State_Globals.py is used as a shared state container for:
 This is intentional for the scope of the project and simplifies UI synchronization.
 
 
+### *Single Launcher Instance Policy* 
+
+The system enforces a single Launcher instance by design.
+
+- If a Launcher window is already open, additional launch attempts from chat windows are blocked.
+- Instead of opening a duplicate, the existing Launcher window is focused.
+
+This behavior is implemented using browser-side coordination
+(`BroadcastChannel` combined with a `localStorage` heartbeat mechanism)
+to prevent multiple control panels from running simultaneously.
+
+This design choice avoids race conditions, conflicting server controls,
+and inconsistent system state.
+
+
 ### *“SECURITY STATUS: ENCRYPTED”*
 
 This label is UI-only and does not imply actual encryption on the TCP layer.
@@ -443,3 +481,15 @@ The client performs a clean handshake:
   - waits briefly for server-side close
     
 If the browser is force-killed, cleanup may be delayed until socket closes.
+
+---
+
+## Summary & Conclusions 🎓
+
+BotChat demonstrates a complete TCP-based client–server chat system implemented in Python, combining a multi-threaded server with a modern NiceGUI frontend.
+
+The project showcases core networking concepts such as message routing, protocol design, user synchronization, and clean connection handling.
+
+The separation between the Launcher control layer and independent chat windows enables centralized management alongside isolated user sessions.
+
+Overall, the system serves as a clear and practical academic example of client–server architecture and real-time UI coordination.

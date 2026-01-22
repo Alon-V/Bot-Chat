@@ -17,6 +17,8 @@ The project includes a **Launcher (Control Center)** window that can:
 
 ## Table of Contents 📌
 - [Features](#features-)
+  - [Launcher (Control Center)](#Launcher-(Control-Center))
+  - [Chat Window](#Chat-Window)
 - [Architecture Overview](#architecture-overview-)
 - [Project Structure](#project-structure-)
 - [Requirements](#requirements-)
@@ -36,16 +38,16 @@ The project includes a **Launcher (Control Center)** window that can:
 ---
 
 ## Features ✨
-### Launcher (Control Center)
+### Launcher (Control Center) 🚀
 - ✅ Server ON/OFF toggle with real-time status icon (cloud on/off)
-- ✅ Start server as a subprocess (local execution)
-- ✅ Stop server gracefully; fallback kill by port (macOS `lsof`)
+    - Start server as a subprocess (local execution)
+    - Stop server gracefully; fallback kill by port (macOS `lsof`)
 - ✅ Spawn multiple users (each in a dedicated popup chat window)
 - ✅ Display active users (live refreshed dialog)
 - ✅ Close all chat windows via BroadcastChannel
 - ✅ Full system shutdown: close chats → stop server → close launcher
 
-### Chat Window
+### Chat Window 💬
 - ✅ Global messages (“Everyone”)
 - ✅ Direct messages (private to a selected user)
 - ✅ Username change with:
@@ -54,8 +56,8 @@ The project includes a **Launcher (Control Center)** window that can:
   - server ACK synchronization
   - rollback timer (revert typed name if not confirmed)
 - ✅ Avatar selection:
-  - DiceBear-based avatars
-  - optional background color selection
+  - DiceBear-based avatars (seed-based)
+  - optional background color selection (seed → bg cache)
   - server broadcast so all clients sync the avatar
 - ✅ Scroll-aware unread counter:
   - “scroll to bottom” floating button

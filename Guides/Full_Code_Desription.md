@@ -70,21 +70,37 @@ The project includes a **Launcher (Control Center)** window that can:
 ---
 
 ## Architecture Overview 🧠
-BotChat consists of two layers:
+BotChat consists of three layers:
 
-1) **UI Layer (NiceGUI)**  
-   - Runs on: `http://localhost:<CHAT_UI_PORT>/`
-   - Provides:
-     - Launcher UI at `/`
-     - Chat UI at `/?mode=chat&nickname=NAME`
+### 🌐 UI Layer (NiceGUI)
+- **Launcher UI:** `BotChat/Launcher_UI.py`
+- **Chat UI:** `BotChat/Chat_UI.py`
+- Routing controlled by:
+  - **File:** `BotChat/UI_Router.py`
+  - `/` → launcher  
+  - `/?mode=chat&nickname=<name>` → chat window
 
-2) **TCP Server Layer (Sockets)**  
-   - Listens on: `HOST=0.0.0.0`, `PORT=<SERVER_PORT>`
-   - Maintains:
-     - connected users list
-     - routing of global/direct messages
-     - rename requests (ACK/ERR)
-     - avatar broadcasts
+### 🖥️ TCP Server Layer (Sockets)
+- **File:** `BotChat/Main_Server.py`
+- Listens on: `HOST=0.0.0.0`, `PORT=<SERVER_PORT>`
+- Accepts multiple clients.
+- Each client handled in a dedicated thread.
+- Maintains:
+  - `online_users: Dict[nickname -> socket]`
+  - `online_users_lock` for concurrency
+  - routing of global/direct messages
+  - rename requests (ACK/ERR)
+  - avatar broadcasts
+ 
+### 🗂️ Shared State (In-Process)
+The UI (launcher + chat windows in the same NiceGUI process) share Python globals:
+- **File:** `BotChat/State_Globals.py`
+- Stores:
+  - `messages`: chat history entries
+  - `active_users_list`: server-synced online names
+  - `avatar_urls`: synced avatar URL map
+  - `avatar_seeds`: stable avatar identity across renames
+  - `user_colors_cache`: stable bg color per avatar seed
 
 ---
 

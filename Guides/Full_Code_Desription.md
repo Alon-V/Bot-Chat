@@ -33,7 +33,6 @@ The project includes a **Launcher (Control Center)** window that can:
 - [Protocol Reference](#protocol-reference-)
 - [Important Notes & Warnings](#important-notes--warnings-)
 - [Troubleshooting](#troubleshooting-)
-- [Known Limitations](#known-limitations-)
 
 ---
 
@@ -348,38 +347,38 @@ When the user scrolls up:
 All messages are newline-delimited (\n).
 
 
-### Server → Clients (Pipe | separated) 💾 --->
+### *Server → Clients (Pipe | separated)* 💾 --->
 
   **1) USERS — Online Users Update**
   
-  Format: `USERS|System|ALL|user1,user2,user3`
+    Format: `USERS|System|ALL|user1,user2,user3`
   
   **2) MSG — Chat Message**
   
-  Format: `MSG|<sender>|<target>|<msg_id>|<content>`
+    Format: `MSG|<sender>|<target>|<msg_id>|<content>`
   
   **3) ACK — Confirmation to Requestor**
   
-  Format: `ACK|System|<old>|NAME_CHANGED|<new>`
+    Format: `ACK|System|<old>|NAME_CHANGED|<new>`
   
   **4) ERR — Error**
   
-  Format: `ERR|System|<who>|NAME_TAKEN`
+    Format: `ERR|System|<who>|NAME_TAKEN`
   
   **5) RENAME — Rename Broadcast (for sync)**
   
-  Format: `RENAME|<old>|<new>`
+    Format: `RENAME|<old>|<new>`
   
   **6) AVATAR — Avatar Broadcast**
   
-  Format: `AVATAR|<username>|<url>`
+    Format: `AVATAR|<username>|<url>`
 
 
-### Client → Server 🪪 --->
+### *Client → Server* 🪪 --->
 
   **A) Normal Messages (Colon : separated)**
   
-  Format: `<recipient>:<msg_id>:<text>`
+    Format: `<recipient>:<msg_id>:<text>`
   
   - recipient is ALL or an exact username
   
@@ -388,11 +387,59 @@ All messages are newline-delimited (\n).
   **B) Commands**
   
   - Quit / clean disconnect: `CMD:QUIT`
-  
-  
+    
   - Rename request: `CMD:NAME_CHANGE:<new_name>`
-  
-  
+    
   - Avatar update: `CMD:AVATAR:<avatar_url>`
   
+  ---
+
+## Important Notes & Warnings ⚠️
+
+### *Shared UI State (In-Process)*
+
+The NiceGUI app hosts both Launcher and Chat pages in the same Python process.
+Therefore, State_Globals.py is used as a shared state container for:
+  - messages
+  - active_users_list
+  - avatar maps and seeds
+
+This is intentional for the scope of the project and simplifies UI synchronization.
+
+
+### *“SECURITY STATUS: ENCRYPTED”*
+
+This label is UI-only and does not imply actual encryption on the TCP layer.
+TCP communication is currently plaintext.
+
+---
+
+## Troubleshooting 🧯
+
+### *Connection Error in Chat Window*
+
+If you see a connection error screen:
+
+  - Make sure Main_Server.py is running
   
+  - Check SERVER_IP and SERVER_PORT in Common_Setups.py
+  
+  - If using LAN mode, verify both machines are on the same network and the port is open
+
+### *Popup Blocked*
+
+If the launcher or chat popups do not open:
+
+  - Allow popups for `localhost`
+  
+  - Use the “Open Pages Manually” section above
+
+### *Ghost Users / Not Disconnecting Cleanly*
+
+The client performs a clean handshake:
+
+  - sends `CMD:QUIT`
+
+  - waits briefly for server-side close
+    
+If the browser is force-killed, cleanup may be delayed until socket closes.

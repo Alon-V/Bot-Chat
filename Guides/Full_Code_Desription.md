@@ -24,7 +24,7 @@ The project includes a **Launcher (Control Center)** window that can:
 - [Requirements](#requirements-)
 - [Configuration (IP / Ports)](#configuration-ip--ports-)
 - [Installation](#installation-)
-- [How To Run](#how-to-run-)
+- [How To Run](#how-to-run)
   - [Run via Launcher (Recommended)](#1-run-via-launcher-recommended-)
   - [Run Server Manually + UI](#2-run-server-manually--ui-)
   - [Open Pages Manually (No Popup)](#3-open-pages-manually-no-popup-)
@@ -155,7 +155,7 @@ SERVER_IP = '127.0.0.1'
 #### Mode B — Multi-Machine (LAN) 🌐
 Server runs on one machine, UI runs on another machine in the same local network.
 
-(If needed-> see the guide for further explanation- [How to Find your IP](/Guides/How_to_find_your_IPv4_Address.md)
+(If needed-> see the guide for further explanation- [How to Find your IP](/Guides/How_to_find_your_IPv4_Address.md))
 
 ```py
 SERVER_IP = '<SERVER_MACHINE_LAN_IP>'
@@ -251,7 +251,7 @@ http://localhost:8080/?mode=chat&nickname=User1234
 
 - It also detects real server status by attempting a fast TCP connection to `SERVER_IP:SERVER_PORT`
 
-- When switches of shutsdown the server
+- “When turning the server OFF, the launcher closes all chat windows and clears local UI state.”
   
 
 ### Show Active Users 👨‍💻

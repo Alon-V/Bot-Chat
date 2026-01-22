@@ -111,7 +111,7 @@ This luncher is what you should see after running `Run_App`:
 
 *For further explanations you can see ->
 
-- [How to Use the Launcher](Guides/Full_Code_Description.md##how-to-use-the-launcher-)
+- [How to Use the Launcher](Guides/Full_Code_Description.md#how-to-use-the-launcher)
 - [How to Use the Chat Window](https://github.com/Alon-V/Bot-Chat/blob/main/Guides/Full_Code_Description.md#how-to-use-the-chat-window-)
 
 ---

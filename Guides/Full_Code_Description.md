@@ -267,7 +267,7 @@ http://localhost:8080/?mode=chat&nickname=User1234
 ```
 
 ---
-<a id="how-to-use-launcher"></a>
+
 ## How to Use the Launcher 🚀
 
 ### Create a User 👤

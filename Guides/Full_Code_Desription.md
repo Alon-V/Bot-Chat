@@ -73,7 +73,7 @@ The project includes a **Launcher (Control Center)** window that can:
 BotChat consists of three layers:
 
 ### 🌐 UI Layer (NiceGUI)
-- **Launcher UI:** [`BotChat/Launcher_UI.py`](BotChat/Launcher_UI.py)
+- **Launcher UI:** [`BotChat/Launcher_UI.py`]([Launcher UI](https://github.com/USERNAME/REPO_NAME/blob/main/BotChat/Launcher_UI.py))
 - **Chat UI:** `BotChat/Chat_UI.py`
 - Routing controlled by:
   - **File:** `BotChat/UI_Router.py`

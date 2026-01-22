@@ -19,8 +19,8 @@ The project includes a **Launcher (Control Center)** window that can:
 - [Features](#features-)
   - [Launcher (Control Center)](#launcher-control-center-)
   - [Chat Window](#chat-window-)
-- [Architecture Overview](#architecture-overview-)
 - [Project Structure](#project-structure-)
+- [Architecture Overview](#architecture-overview-)
 - [Requirements](#requirements-)
 - [Configuration (IP / Ports)](#configuration-ip--ports-)
 - [Installation](#installation-)
@@ -69,19 +69,31 @@ The project includes a **Launcher (Control Center)** window that can:
 
 ---
 
+## Project Structure 📁
+Core files (based on your code):
+- [`Run_App.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Run_App.py) – starts NiceGUI server and opens the Launcher in Chrome app-mode
+- [`UI_Router.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/UI_Router.py) – routes `/` to Launcher and `mode=chat` to Chat
+- [`Launcher_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Launcher_UI.py) – server toggle, create users, active users dialog, shutdown logic
+- [`Chat_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Chat_UI.py) – chat messages, sending, DM, rename, avatar sync, scrolling behavior
+- [`Main_Server.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Main_Server.py) – TCP server (protocol handling, broadcast, private messages)
+- [`Common_Setups.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Common_Setups.py) – configuration (SERVER_IP, ports, Chrome path)
+- [`State_Globals.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/State_Globals.py) – UI state (messages, active users, avatars)
+
+---
+
 ## Architecture Overview 🧠
 BotChat consists of three layers:
 
 ### 🌐 UI Layer (NiceGUI)
 - **Launcher UI:** [`BotChat/Launcher_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Launcher_UI.py)
-- **Chat UI:** `BotChat/Chat_UI.py`
+- **Chat UI:** [`BotChat/Chat_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Chat_UI.py)
 - Routing controlled by:
-  - **File:** `BotChat/UI_Router.py`
+  - **File:** [`BotChat/UI_Router.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/UI_Router.py)
   - `/` → launcher  
   - `/?mode=chat&nickname=<name>` → chat window
 
 ### 🖥️ TCP Server Layer (Sockets)
-- **File:** `BotChat/Main_Server.py`
+- **File:** [`BotChat/Main_Server.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Main_Server.py)
 - Listens on: `HOST=0.0.0.0`, `PORT=<SERVER_PORT>`
 - Accepts multiple clients.
 - Each client handled in a dedicated thread.
@@ -94,7 +106,7 @@ BotChat consists of three layers:
  
 ### 🗂️ Shared State (In-Process)
 The UI (launcher + chat windows in the same NiceGUI process) share Python globals:
-- **File:** `BotChat/State_Globals.py`
+- **File:** [`BotChat/State_Globals.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/State_Globals.py)
 - Stores:
   - `messages`: chat history entries
   - `active_users_list`: server-synced online names

@@ -1,3 +1,6 @@
+> **Academic Project Notice**  
+> This project was developed as part of an academic assignment focusing on TCP/IP protocols, encapsulation, real network traffic, Client–server architecture, and protocol design.
+
 # About Botchat 🤖
 
 ## Part 1: 📦

@@ -22,13 +22,13 @@ Botchat is a full Client Server architecture using pure Python socket libraries 
 ## Project Structure 🧌
 | File | Short summery |
 | --- | --- |
-| [Main_Server](/BotChat/Main_Server.py) | The TCP Server logic (Connection handling, Broadcasting) |
-| [Chat_UI](/BotChat/Chat_UI.py) | The Chat Window interface (NiceGUI + Client Socket) |
-| [Launcher_UI](/BotChat/Launcher_UI.py) | The Dashboard/Login screen (Server toggle, User list) |
-| [Common_Setups](/BotChat/Common_Setups.py) | Configuration file (IP, PORT, Constants) |
-| [Run_App](/BotChat/Run_App.py) | Main entry point to start the application |
-| [UI_Router](/BotChat/UI_Router.py) | Routes traffic between Launcher and Chat modes |
-| [State_Globals](/BotChat/State_Globals.py) | Shared state variables (Message history, Active users) |
+| [Main_Server](/PartTwo/BotChat/Main_Server.py) | The TCP Server logic (Connection handling, Broadcasting) |
+| [Chat_UI](/PartTwo/BotChat/Chat_UI.py) | The Chat Window interface (NiceGUI + Client Socket) |
+| [Launcher_UI](/PartTwo/BotChat/Launcher_UI.py) | The Dashboard/Login screen (Server toggle, User list) |
+| [Common_Setups](/PartTwo/BotChat/Common_Setups.py) | Configuration file (IP, PORT, Constants) |
+| [Run_App](/PartTwo/BotChat/Run_App.py) | Main entry point to start the application |
+| [UI_Router](/PartTwo/BotChat/UI_Router.py) | Routes traffic between Launcher and Chat modes |
+| [State_Globals](/PartTwo/BotChat/State_Globals.py) | Shared state variables (Message history, Active users) |
 
 *If you want to know a bit more about the code itself -> [Short_Code_Description](/Guides/Short_Code_Description.md) , [Full_Code_Description](/Guides/Full_Code_Description.md)
 

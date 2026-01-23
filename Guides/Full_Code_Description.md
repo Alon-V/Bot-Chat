@@ -104,13 +104,13 @@ In addition to multiple **chat popup windows** representing distinct users:
 
 ## Project Structure 📁
 Core files (based on your code):
-- [`Run_App.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Run_App.py) – starts NiceGUI server and opens the Launcher in Chrome app-mode
-- [`UI_Router.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/UI_Router.py) – routes `/` to Launcher and `mode=chat` to Chat
-- [`Launcher_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Launcher_UI.py) – server toggle, create users, active users dialog, shutdown logic
-- [`Chat_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Chat_UI.py) – chat messages, sending, DM, rename, avatar sync, scrolling behavior
-- [`Main_Server.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Main_Server.py) – TCP server (protocol handling, broadcast, private messages)
-- [`Common_Setups.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Common_Setups.py) – configuration (SERVER_IP, ports, Chrome path)
-- [`State_Globals.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/State_Globals.py) – UI state (messages, active users, avatars)
+- [`Run_App.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Run_App.py) – starts NiceGUI server and opens the Launcher in Chrome app-mode
+- [`UI_Router.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/UI_Router.py) – routes `/` to Launcher and `mode=chat` to Chat
+- [`Launcher_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Launcher_UI.py) – server toggle, create users, active users dialog, shutdown logic
+- [`Chat_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Chat_UI.py) – chat messages, sending, DM, rename, avatar sync, scrolling behavior
+- [`Main_Server.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Main_Server.py) – TCP server (protocol handling, broadcast, private messages)
+- [`Common_Setups.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Common_Setups.py) – configuration (SERVER_IP, ports, Chrome path)
+- [`State_Globals.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/State_Globals.py) – UI state (messages, active users, avatars)
 
 ---
 
@@ -118,15 +118,15 @@ Core files (based on your code):
 BotChat consists of three layers:
 
 ### 🌐 UI Layer (NiceGUI)
-- **Launcher UI:** [`BotChat/Launcher_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Launcher_UI.py)
-- **Chat UI:** [`BotChat/Chat_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Chat_UI.py)
+- **Launcher UI:** [`BotChat/Launcher_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Launcher_UI.py)
+- **Chat UI:** [`BotChat/Chat_UI.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Chat_UI.py)
 - Routing controlled by:
-  - **UI Router:** [`BotChat/UI_Router.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/UI_Router.py)
+  - **UI Router:** [`BotChat/UI_Router.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/UI_Router.py)
   - `/` → launcher  
   - `/?mode=chat&nickname=<name>` → chat window
 
 ### 🖥️ TCP Server Layer (Sockets)
-- **The Server:** [`BotChat/Main_Server.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Main_Server.py)
+- **The Server:** [`BotChat/Main_Server.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Main_Server.py)
 - Listens on: `HOST=0.0.0.0`, `PORT=<SERVER_PORT>`
 - Accepts multiple clients.
 - Each client handled in a dedicated thread.
@@ -139,13 +139,13 @@ BotChat consists of three layers:
  
 ### 🗂️ Shared State (In-Process)
 - Configuration & Global Variables:
-  - **Setups:** [`BotChat/Common_Setups.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/Common_Setups.py)
+  - **Setups:** [`BotChat/Common_Setups.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/Common_Setups.py)
   - Keeps:
     - `SERVER_IP`: depends on the needs
     - `Ports`: server and UI
     - `Chrome path`:  app mode
 - The UI (launcher + chat windows in the same NiceGUI process) share Python globals:
-  - **Global States for UI:** [`BotChat/State_Globals.py`](https://github.com/Alon-V/Bot-Chat/blob/main/BotChat/State_Globals.py)
+  - **Global States for UI:** [`BotChat/State_Globals.py`](https://github.com/Alon-V/Bot-Chat/blob/main/PartTwo/BotChat/State_Globals.py)
   - Stores:
     - `messages`: chat history entries
     - `active_users_list`: server-synced online names

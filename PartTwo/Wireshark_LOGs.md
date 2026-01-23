@@ -1,7 +1,7 @@
 # Welcome to our network traffic (Wireshark) 🦈 tour
 
 ## First of all I will show you the 3 types of Handshakes we have
-1. Our Launcher frequently connects just to check if the server is online and then immediately disconnects.
+### 1. Our Launcher frequently connects just to check if the server is online and then immediately disconnects.
 
 This includes:
 
@@ -18,7 +18,7 @@ This includes:
 <img width="1215" height="96" alt="image" src="https://github.com/user-attachments/assets/d0db2a95-8838-496c-b7ba-3f81365dc77a" />
   </div>
 
-2. The "Observer" is a hidden connection to the Launcher that is keepet open to update the user list.
+### 2. The "Observer" is a hidden connection to the Launcher that is keepet open to update the user list.
 
 This includes:
 
@@ -29,7 +29,7 @@ This includes:
 `ACK` : An ackolgemnet (a yes/no answer to the reqst) and if its accpteed then the coneection happans otherwise nothing happens
 an easy way to find him is to look at the Length, it wont be longer then 25 bytes becose the massgae its sends is: __LAUNCHER__
 
-3. A "New User"
+### 3. A "New User"
 This includes:
 
 `SYN` : A reqst to connect

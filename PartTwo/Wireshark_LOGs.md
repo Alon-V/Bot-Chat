@@ -49,7 +49,7 @@ it does not exceed **25 bytes**, since the message sent during the handshake is 
 <br>
   
 <div align="center">
-<img width="503" height="74" alt="image" src="https://github.com/user-attachments/assets/fc32e8b6-8ffd-4a10-bb87-93fb43d51717" />
+<img width="552" height="116" alt="image" src="https://github.com/user-attachments/assets/fc32e8b6-8ffd-4a10-bb87-93fb43d51717" />
 </div>
 
 ---

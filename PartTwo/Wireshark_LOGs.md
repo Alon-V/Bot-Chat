@@ -114,6 +114,14 @@ Additionally, the capture shows the randomized port assigned to the client when 
 ---
 
 ## Sending a massage 📟
+First- let's send a message:
+
+<div align="center">
+<img width="648" height="396" alt="Screenshot 2026-01-24 at 12 41 11" src="https://github.com/user-attachments/assets/666b1a17-a868-419f-9fd7-6dfbe780c3e5" />
+</div>
+
+<br>
+
 When a user sends a message, the traffic appears as follows:
 
 <div align="center">
@@ -138,6 +146,14 @@ The message payload itself can be observed here ("I am a mistborn"):
 ---
 
 ## Reciving a massage 📬
+Now lest see what happens when we recive the massage:
+
+<div align="center">
+<img width="648" height="397" alt="Screenshot 2026-01-24 at 12 41 28" src="https://github.com/user-attachments/assets/1e9bfebc-4208-4e8c-b54d-d9603ffceb1e" />
+</div>
+
+<br>
+
 Since this message is a **broadcast**, the server forwards it to all connected users.  
 This is visible in Wireshark by observing multiple outgoing packets from the server, each with a different destination port.
 

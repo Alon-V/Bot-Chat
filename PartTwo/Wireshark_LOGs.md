@@ -146,7 +146,7 @@ The message payload itself can be observed here ("I am a mistborn"):
 ---
 
 ## Reciving a massage 📬
-Now lest see what happens when we recive the massage:
+Now let's see what happens when we recive the massage:
 
 <div align="center">
 <img width="648" height="397" alt="Screenshot 2026-01-24 at 12 41 28" src="https://github.com/user-attachments/assets/1e9bfebc-4208-4e8c-b54d-d9603ffceb1e" />

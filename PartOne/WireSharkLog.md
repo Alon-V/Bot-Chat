@@ -206,7 +206,10 @@ For each transmission, a textual payload (“Hello Packet”) is generated, the 
 In a subsequent step, the function is invoked with TCP flags set to `0x18` (PSH + ACK) using `demo_send(flags=0x18)`.
 
 The transmitted packets are then captured and inspected in Wireshark.  
-Packet identification is performed using the following capture filter: "tcp.port==12345".
+Packet identification is performed using the following capture filter:
+```py
+"tcp.port==12345".
+```
 
 ---
 
@@ -227,6 +230,8 @@ Packet identification is performed using the following capture filter: "tcp.port
 
 *Figure 4: Wireshark capture overview showing TCP packets exchanged over the loopback interface using destination port 12345.*
 
+<br>
+
 ### Packet Overview 💾
 The captured traffic consists of multiple TCP packets matching the predefined criteria:
 - Source and destination IP: `127.0.0.1`
@@ -235,6 +240,8 @@ The captured traffic consists of multiple TCP packets matching the predefined cr
 - TCP flags: PSH + ACK (0x18)
 - One sec timeout between sends
 - Payload: “Hello Packet”
+
+<br>
 
 ### CSV-Based Packet Re-Transmission 🔁
 All messages from the original CSV file were re-encapsulated and transmitted again using the same TCP/IP structure.  

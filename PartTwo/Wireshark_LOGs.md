@@ -42,6 +42,12 @@ Once established, the connection remains open (otherwise nothing happens).
 
 An easy way to identify this connection in Wireshark is by inspecting the packet length:  
 it does not exceed **25 bytes**, since the message sent during the handshake is the identifier: __LAUNCHER__.
+<div align="center">
+<img width="1319" height="65" alt="image" src="https://github.com/user-attachments/assets/1c7d5d3e-06bc-4b8b-986c-fe3787e798cd" />
+  </div>
+<div align="center">
+<img width="503" height="74" alt="image" src="https://github.com/user-attachments/assets/fc32e8b6-8ffd-4a10-bb87-93fb43d51717" />
+</div>
 
 ---
 

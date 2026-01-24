@@ -97,9 +97,9 @@ The server acknowledges the request and agrees to establish the connection (othe
 **`[ACK]` :**  
 The client confirms the acknowledgment, completing the connection setup.
 
-<br>
+  ⏩
 
-*Immediately after the handshake is completed, the client sends its **username** as the first application-level payload.* --> **`[PSH, ACK]`** 
+❗️ *Immediately after the handshake is completed, the client sends its **username** as the first application-level payload.* --> **`[PSH, ACK]`** 
 
 <br>
 
@@ -150,7 +150,7 @@ In this example:
 The message payload itself can be observed here ("I am a mistborn"):
 
 <div align="center">
-<img width="907" height="427" alt="image" src="https://github.com/user-attachments/assets/ce3a154c-d6c6-4ab1-94ad-2bc8d4ecc186" />
+<img width="552" height="116" alt="image" src="https://github.com/user-attachments/assets/ce3a154c-d6c6-4ab1-94ad-2bc8d4ecc186" />
 </div>
 
 ---
@@ -175,11 +175,24 @@ This is visible in Wireshark by observing multiple outgoing packets from the ser
 
 <br>
 
+As we can see the message that was sent for one client ('Client 1') went through the server and sent to all of the other clients that were connected.
+
+- ***Server -> Client 2 :*** `8081 → 61157` , `10.0.0.16 → 10.0.0.15`
+- ***Server -> Client 3 :*** `8081 → 61204` , `10.0.0.16 → 10.0.0.15`
+- ***Server -> Client 4 :*** `8081 → 59772` , `10.0.0.16 → 10.0.0.15`
+- **All the clients were on the same machine, that does'nt have to be the case.*
+
+<br>
+
 <div align="center">
 <img width="552" height="116" alt="Screenshot 2026-01-24 at 12 32 38" src="https://github.com/user-attachments/assets/b9056119-5d76-4639-b851-346569696a8c" />
 </div>
 
-**In case its a praivet massage then he sends this only to one user.*
+<br>
+
+We can see that the payload is the message we sent ("I am a mistborn") from Client 1 ("Vin") as a broadcast to everyone ("ALL"). 
+
+**In case its a private massage then he sends this only to one user.*
 
 
 

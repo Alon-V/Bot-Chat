@@ -28,6 +28,21 @@ Botchat is a full Client-Server architecture using pure Python socket libraries 
 ## * This next section is a short guide for Part Two of the project ->  
 ---
 
+## Table of Contents 📌
+
+- [Key Features](#key-features-)
+- [Project Structure](#project-structure-)
+- [How to Run](#how-to-run-)
+- [How to Use the App](#how-to-use-the-app-%E2%80%8D)
+  - [Running the Chat and Server](#running-the-chat-and-server)
+  - [Adding a User](#adding-a-user)
+- [How to Run Chatbot on Local LAN (Multiple Computers)](#how-to-run-chatbot-on-local-lan-multiple-computers-)
+- [Use of AI Tools (Disclosure)](#use-of-ai-tools-disclosure-)
+  - [Purpose of Use](#purpose-of-use)
+  - [Example Prompts](#example-prompts)
+
+---
+
 ## Key Features ✨
 - **Pure TCP Networking:** Built entirely on Python's standard socket library (no high-level wrappers like Socket.IO). (Sadly this was asked for in the project requirements 😉)
 - **Real-Time Communication:** Instant messaging with support for Global Chat and Private Messaging.

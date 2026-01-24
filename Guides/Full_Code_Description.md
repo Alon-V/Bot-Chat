@@ -22,44 +22,45 @@ In addition to multiple **chat popup windows** representing distinct users:
 ---
 
 ## Table of Contents 📌
-- [Features](#features-) ->
+
+- [Features](#features-) 
   - [Launcher (Control Center)](#launcher-control-center-)
   - [Chat Window](#chat-window-)
 - [Project Structure](#project-structure-)
-- [Architecture Overview](#architecture-overview-) ->
+- [Architecture Overview](#architecture-overview-) 
   - [UI Layer (NiceGUI)](#-ui-layer-nicegui)
   - [TCP Server Layer (Sockets)](#%EF%B8%8F-tcp-server-layer-sockets)
   - [Shared State (In-Process)](#%EF%B8%8F-shared-state-in-process)
 - [Requirements](#requirements-)
-- [Configuration (IP / Ports)](#configuration-ip--ports-) ->
-  - [Deployment Modes (Evaluator Choice)](#deployment-modes-evaluator-choice-):
+- [Configuration (IP / Ports)](#configuration-ip--ports-) 
+  - [Deployment Modes (Evaluator Choice)](#deployment-modes-evaluator-choice-)
     - [Mode A — Single Machine (Localhost)](#mode-a--single-machine-localhost-%EF%B8%8F----)
     - [Mode B — Multi-Machine (LAN)](#mode-b--multi-machine-lan-----)
 - [Installation](#installation-)
-- [How To Run](#how-to-run-%EF%B8%8F) ->
+- [How To Run](#how-to-run-%EF%B8%8F) 
   - [Run via Launcher (Recommended)](#1-run-via-launcher-recommended-)
   - [Run Server Manually + UI](#2-run-server-manually--ui-%EF%B8%8F)
   - [Open Pages Manually (No Popup)](#3-open-pages-manually-no-popup-)
-- [How to Use the Launcher](#how-to-use-the-launcher-) ->
+- [How to Use the Launcher](#how-to-use-the-launcher-) 
   - [Create a User](#create-a-user-)
   - [Server Toggle (ON/OFF)](#server-toggle-onoff-%EF%B8%8F)
   - [Show Active Users](#show-active-users-%E2%80%8D)
   - [Close All Chats](#close-all-chats-)
   - [Shutdown System](#shutdown-system-)
-- [How to Use the Chat Window](#how-to-use-the-chat-window-) ->
+- [How to Use the Chat Window](#how-to-use-the-chat-window-) 
   - [Send Messages](#send-messages-)
   - [Rename Yourself](#rename-yourself-)
   - [Change Avatar](#change-avatar-)
   - [Scroll-Aware Unread Counter](#scroll-aware-unread-counter-)
   - [Open Launcher from Chat Window](#open-launcher-from-chat-window-)
-- [Protocol Reference](#protocol-reference-) ->
+- [Protocol Reference](#protocol-reference-) 
   - [Server → Clients (Pipe | separated)](#server--clients-pipe--separated-----)
   - [Client → Server](#client--server-----)
-- [Important Notes & Warnings](#important-notes--warnings-%EF%B8%8F) ->
+- [Important Notes & Warnings](#important-notes--warnings-%EF%B8%8F) 
   - [Shared UI State (In-Process)](#shared-ui-state-in-process)
   - [Single Launcher Instance Policy](#single-launcher-instance-policy)
   - [“SECURITY STATUS: ENCRYPTED”](#security-status-encrypted)
-- [Troubleshooting](#troubleshooting-) ->
+- [Troubleshooting](#troubleshooting-) 
   - [Connection Error in Chat Window](#connection-error-in-chat-window)
   - [Popup Blocked](#popup-blocked)
   - [Ghost Users / Not Disconnecting Cleanly](#ghost-users--not-disconnecting-cleanly)
